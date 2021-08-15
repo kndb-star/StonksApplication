@@ -1,0 +1,77 @@
+@page "/stonks"
+@using StonksApplication.Shared
+@inject HttpClient Http
+@attribute [Authorize]
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@inject HttpClient Http
+
+@if(cryptoCurrencies == null)
+{
+	<p><em>Fetching crypto data...</em></p>
+}
+else
+{
+
+	<input style="width:30%" class="form-control" type="text" placeholder="Filter..."
+		   @bind="Filter"
+		   @bind:event="oninput">
+
+	<table class="table">
+		<thead>
+			<tr>
+				<th>ID</th>
+				<th>Name</th>
+				<th>Price ($)</th>
+				<th>Hourly Volume ($)</th>
+				<th>Daily Volume ($)</th>
+				<th>Monthly Volume ($)</th>
+			</tr>
+		</thead>
+		<tbody>
+			@foreach(var crypto in cryptoCurrencies)
+			{
+				if(!IsVisible(crypto))
+					continue;
+
+				<tr>
+					<td>@crypto.asset_id</td>
+					<td><img src=@crypto.url alt=@crypto.name>@crypto.name</td>
+					<td>@crypto.price_usd</td>
+					<td>@crypto.volume_1hrs_usd</td>
+					<td>@crypto.volume_1day_usd</td>
+					<td>@crypto.volume_1mth_usd</td>
+				</tr>
+			}
+		</tbody>
+	</table>
+}
+
+@code {
+	private Asset[] cryptoCurrencies;
+	private const string commonPath = "v1/stonks";
+
+	protected override async Task OnInitializedAsync()
+	{
+		try
+		{
+			cryptoCurrencies = await Http.GetFromJsonAsync<Asset[]>(commonPath + "/crypto");
+		}
+		catch(Exception ex)
+		{
+
+		}
+	}
+
+	public string Filter { get; set; }
+
+	public bool IsVisible(Asset crypto)
+	{
+		if(string.IsNullOrEmpty(Filter))
+			return true;
+
+		if(crypto.asset_id.StartsWith(Filter, StringComparison.OrdinalIgnoreCase) || crypto.name.StartsWith(Filter, StringComparison.OrdinalIgnoreCase))
+			return true;
+
+		return false;
+	}
+}
